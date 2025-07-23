@@ -2,6 +2,7 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
+using IResult = Discord.Interactions.IResult;
 
 namespace PPOBot.Handlers;
 
@@ -26,6 +27,7 @@ public class DiscordClientHandler(
 
         client.Ready += HandleReady;
         client.InteractionCreated += HandleInteractionReceived;
+        interactionService.SlashCommandExecuted += HandleSlashCommandExecuted;
 
         logger.LogInformation("Starting discord service...");
 
@@ -43,6 +45,18 @@ public class DiscordClientHandler(
     
     private async Task HandleReady()
         => await interactionService.RegisterCommandsGloballyAsync();
+
+    private async Task HandleSlashCommandExecuted(
+        SlashCommandInfo slashCommand,
+        IInteractionContext context,
+        IResult result)
+    {
+        if (result.IsSuccess)
+            return;
+
+        if (result.Error is InteractionCommandError.UnmetPrecondition)
+            await context.Interaction.RespondAsync(result.ErrorReason, ephemeral: true);
+    }
 
     private async Task HandleInteractionReceived(SocketInteraction interaction)
     {
