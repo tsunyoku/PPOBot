@@ -9,7 +9,7 @@ public class DiscordSlashCommandHandler(ILogger<DiscordSlashCommandHandler> logg
 {
     [SlashCommand("purge", "Purge messages")]
     [RequiresPPORole(PPORole.Mod)]
-    public async Task Purge([Summary("The amount of messages to purge")] int amount)
+    public async Task Purge([Summary(description: "The amount of messages to purge")] int amount)
     {
         logger.LogInformation(
             "User {@DiscordUsername} purged {@Amount} messages in channel {@ChannelName}",
