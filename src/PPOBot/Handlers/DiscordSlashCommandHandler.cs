@@ -11,6 +11,8 @@ public class DiscordSlashCommandHandler(ILogger<DiscordSlashCommandHandler> logg
     [RequiresPPORole(PPORole.Mod)]
     public async Task Purge([Summary(description: "The amount of messages to purge")] int amount)
     {
+        await DeferAsync(ephemeral: true);
+
         logger.LogInformation(
             "User {@DiscordUsername} purged {@Amount} messages in channel {@ChannelName}",
             Context.User.Username,
@@ -21,5 +23,7 @@ public class DiscordSlashCommandHandler(ILogger<DiscordSlashCommandHandler> logg
         
         foreach (var message in messages)
             await Context.Channel.DeleteMessageAsync(message);
+
+        await RespondAsync($"Purged {amount} messages", ephemeral: true);
     }
 }
