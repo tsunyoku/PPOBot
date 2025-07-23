@@ -24,6 +24,6 @@ public class DiscordSlashCommandHandler(ILogger<DiscordSlashCommandHandler> logg
         foreach (var message in messages)
             await Context.Channel.DeleteMessageAsync(message);
 
-        await RespondAsync($"Purged {amount} messages", ephemeral: true);
+        await FollowupAsync($"Purged {amount} messages", ephemeral: true);
     }
 }
