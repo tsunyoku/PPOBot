@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ppo-bot
+  IMAGE_NAME: ${{ github.repository_owner }}/ppo-bot
 
 jobs:
   build:
