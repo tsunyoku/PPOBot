@@ -69,6 +69,7 @@ public class ColourRoleModule(PPODbContext dbContext) : InteractionModuleBase<So
     {
         var discordRole = await Context.Guild.CreateRoleAsync(
             $"colour: {Context.User.Username}",
+            permissions: GuildPermissions.None,
             color: RoleColors.Solid(Color.Parse(hexCode, ColorType.CssHexColor)));
         
         var guildUser = (IGuildUser)Context.User;
