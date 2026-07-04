@@ -98,19 +98,37 @@ public class DiscordClientHandler(
 
         foreach (var (roleId, count) in await afterGuildUser.Guild.GetRoleUserCountsAsync())
         {
-            if (count > 0)
-                continue;
-
             if (!colourRoleIds.Contains(roleId))
                 continue;
 
             var discordRole = await afterGuildUser.Guild.GetRoleAsync(roleId);
-            await discordRole.DeleteAsync();
+            
+            if (count == 0)
+            {
+                await discordRole.DeleteAsync();
 
-            await dbContext.ColourRoles
-                .AsNoTracking()
-                .Where(x => x.RoleId == roleId)
-                .ExecuteDeleteAsync();
+                await dbContext.ColourRoles
+                    .AsNoTracking()
+                    .Where(x => x.RoleId == roleId)
+                    .ExecuteDeleteAsync();   
+            }
+            else
+            {
+                List<string> usernames = [];
+
+                foreach (var user in await afterGuildUser.Guild.GetUsersAsync())
+                {
+                    if (!user.RoleIds.Contains(discordRole.Id))
+                        continue;
+                    
+                    usernames.Add(user.Username);
+                }
+
+                await discordRole.ModifyAsync(props =>
+                {
+                    props.Name = $"colour: {string.Join(" & ", usernames)}";
+                });
+            }
         }
     }
 
