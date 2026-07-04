@@ -1,11 +1,12 @@
-﻿using Discord;
+using Discord;
 using Discord.Interactions;
 using PPOBot.Attributes;
 using PPOBot.Enums;
+using PPOBot.Handlers;
 
-namespace PPOBot.Handlers;
+namespace PPOBot.Modules;
 
-public class DiscordSlashCommandHandler(ILogger<DiscordSlashCommandHandler> logger) : InteractionModuleBase<SocketInteractionContext>
+public class ModerationModule(ILogger<ModerationModule> logger) : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("purge", "Purge messages")]
     [RequiresPPORole(PPORole.Mod)]

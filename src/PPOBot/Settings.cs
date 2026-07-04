@@ -9,4 +9,7 @@ public class Settings
     
     [Required]
     public required ulong DiscordGuildId { get; init; }
+    
+    [Required]
+    public required string DatabaseConnectionString { get; init; }
 }

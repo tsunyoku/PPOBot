@@ -1,7 +1,9 @@
 ﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using PPOBot.Modules;
 using IResult = Discord.Interactions.IResult;
 
 namespace PPOBot.Handlers;
@@ -10,6 +12,7 @@ public class DiscordClientHandler(
     DiscordSocketClient client,
     InteractionService interactionService,
     IServiceProvider serviceProvider,
+    PPODbContext dbContext,
     IOptions<Settings> options,
     ILogger<DiscordClientHandler> logger) 
     : BackgroundService()
@@ -23,10 +26,11 @@ public class DiscordClientHandler(
         client.Log += Log;
         interactionService.Log += Log;
 
-        await interactionService.AddModuleAsync<DiscordSlashCommandHandler>(serviceProvider);
+        await interactionService.AddModuleAsync<ModerationModule>(serviceProvider);
 
         client.Ready += HandleReady;
         client.InteractionCreated += HandleInteractionReceived;
+        client.UserUpdated += HandleUserUpdated;
         interactionService.SlashCommandExecuted += HandleSlashCommandExecuted;
 
         logger.LogInformation("Starting discord service...");
@@ -72,6 +76,41 @@ public class DiscordClientHandler(
 
         if (!result.IsSuccess)
             logger.LogError("Failed to process interaction: {@ErrorReason}", result.ErrorReason);
+    }
+    
+    private async Task HandleUserUpdated(SocketUser before, SocketUser after)
+    {
+        var beforeGuildUser = (IGuildUser)before;
+        var afterGuildUser = (IGuildUser)after;
+
+        var removedRoleIds = beforeGuildUser.RoleIds.Except(afterGuildUser.RoleIds).ToArray();
+
+        if (!removedRoleIds.Any())
+            return;
+
+        var colourRoles = await dbContext.ColourRoles
+            .AsNoTracking()
+            .Where(x => removedRoleIds.Contains(x.RoleId))
+            .ToArrayAsync();
+        
+        var colourRoleIds = colourRoles.Select(x => x.RoleId).ToArray();
+
+        foreach (var (roleId, count) in await afterGuildUser.Guild.GetRoleUserCountsAsync())
+        {
+            if (count > 0)
+                continue;
+
+            if (!colourRoleIds.Contains(roleId))
+                continue;
+
+            var discordRole = await afterGuildUser.Guild.GetRoleAsync(roleId);
+            await discordRole.DeleteAsync();
+
+            await dbContext.ColourRoles
+                .AsNoTracking()
+                .Where(x => x.RoleId == roleId)
+                .ExecuteDeleteAsync();
+        }
     }
 
     private Task Log(LogMessage message)

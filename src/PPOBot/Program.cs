@@ -2,6 +2,7 @@ using Discord;
 using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using PPOBot;
 using PPOBot.Handlers;
 using Serilog;
@@ -25,6 +26,8 @@ builder.Services
     .AddOptions<Settings>()
     .Bind(builder.Configuration)
     .ValidateOnStart();
+
+var settings = builder.Configuration.Get<Settings>()!;
 
 builder.Services.AddSingleton(new DiscordSocketConfig
 {
@@ -52,6 +55,9 @@ builder.Services.AddSingleton(new CommandServiceConfig
     DefaultRunMode = Discord.Commands.RunMode.Async,
 });
 builder.Services.AddSingleton<CommandService>();
+
+builder.Services.AddDbContext<PPODbContext>(options =>
+    options.UseNpgsql(settings.DatabaseConnectionString));
 
 builder.Services.Configure<HostOptions>(opts =>
     opts.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
