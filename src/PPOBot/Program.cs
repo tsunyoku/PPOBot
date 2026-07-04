@@ -66,4 +66,10 @@ builder.Services.AddHostedService<DiscordClientHandler>();
 
 var host = builder.Build();
 
+using (var scope = host.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<PPODbContext>();
+    dbContext.Database.Migrate();
+}
+
 host.Run();
