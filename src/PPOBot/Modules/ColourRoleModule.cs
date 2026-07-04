@@ -14,7 +14,7 @@ public class ColourRoleModule(PPODbContext dbContext) : InteractionModuleBase<So
     {
         await DeferAsync(ephemeral: true);
 
-        string normalisedColour = hexCode.ToLowerInvariant();
+        string normalisedColour = hexCode.TrimStart('#').ToLowerInvariant();
 
         var existingColourRole = await dbContext.ColourRoles
             .AsNoTracking()
@@ -22,7 +22,7 @@ public class ColourRoleModule(PPODbContext dbContext) : InteractionModuleBase<So
 
         if (existingColourRole is null)
         {
-            await SetupNewColourRole(hexCode);
+            await SetupNewColourRole(normalisedColour);
         }
         else
         {
@@ -65,7 +65,7 @@ public class ColourRoleModule(PPODbContext dbContext) : InteractionModuleBase<So
         var databaseRole = new ColourRole
         {
             RoleId = discordRole.Id,
-            Colour = hexCode.ToLowerInvariant(),
+            Colour = hexCode,
         };
         
         await dbContext.ColourRoles.AddAsync(databaseRole);
