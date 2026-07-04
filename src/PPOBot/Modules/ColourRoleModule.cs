@@ -14,7 +14,17 @@ public class ColourRoleModule(PPODbContext dbContext) : InteractionModuleBase<So
     {
         await DeferAsync(ephemeral: true);
 
-        string normalisedColour = hexCode.TrimStart('#').ToLowerInvariant();
+        var normalisedColour = hexCode.TrimStart('#').ToLowerInvariant();
+        
+        var guildUser = (IGuildUser)Context.User;
+
+        var otherColourRoleIds = await dbContext.ColourRoles
+            .AsNoTracking()
+            .Where(x => guildUser.RoleIds.Contains(x.RoleId) && x.Colour != normalisedColour)
+            .Select(x => x.RoleId)
+            .ToArrayAsync();
+
+        await guildUser.RemoveRolesAsync(otherColourRoleIds);
 
         var existingColourRole = await dbContext.ColourRoles
             .AsNoTracking()
