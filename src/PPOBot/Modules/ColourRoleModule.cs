@@ -49,17 +49,19 @@ public class ColourRoleModule(PPODbContext dbContext) : InteractionModuleBase<So
         
         var guildUser = (IGuildUser)Context.User;
         
-        var existingColourRole = await dbContext.ColourRoles
+        var existingColourRoleIds = await dbContext.ColourRoles
             .AsNoTracking()
-            .SingleOrDefaultAsync(x => guildUser.RoleIds.Contains(x.RoleId));
+            .Where(x => guildUser.RoleIds.Contains(x.RoleId))
+            .Select(x => x.RoleId)
+            .ToListAsync();
 
-        if (existingColourRole is null)
+        if (!existingColourRoleIds.Any())
         {
             await FollowupAsync("You do not have a colour role assigned!", ephemeral: true);
             return;
         }
 
-        await guildUser.RemoveRoleAsync(existingColourRole.RoleId);
+        await guildUser.RemoveRolesAsync(existingColourRoleIds);
         await FollowupAsync("Role unassigned!", ephemeral: true);
     }
 
