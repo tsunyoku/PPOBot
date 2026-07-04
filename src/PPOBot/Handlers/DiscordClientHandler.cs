@@ -27,6 +27,7 @@ public class DiscordClientHandler(
         interactionService.Log += Log;
 
         await interactionService.AddModuleAsync<ModerationModule>(serviceProvider);
+        await interactionService.AddModuleAsync<ColourRoleModule>(serviceProvider);
 
         client.Ready += HandleReady;
         client.InteractionCreated += HandleInteractionReceived;
