@@ -98,6 +98,11 @@ public class DiscordClientHandler(
             {
                 await discordRole.DeleteAsync();
 
+                await dbContext.ColourRoleMembers
+                    .AsNoTracking()
+                    .Where(x => x.RoleId == discordRole.Id)
+                    .ExecuteDeleteAsync();
+
                 await dbContext.ColourRoles
                     .AsNoTracking()
                     .Where(x => x.RoleId == roleId)
