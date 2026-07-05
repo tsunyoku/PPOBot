@@ -5,6 +5,7 @@ using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using PPOBot;
 using PPOBot.Handlers;
+using PPOBot.Services;
 using Serilog;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -55,6 +56,8 @@ builder.Services.AddSingleton(new CommandServiceConfig
     DefaultRunMode = Discord.Commands.RunMode.Async,
 });
 builder.Services.AddSingleton<CommandService>();
+
+builder.Services.AddScoped<IColourRoleService, ColourRoleService>();
 
 builder.Services.AddDbContext<PPODbContext>(options =>
     options.UseNpgsql(settings.DatabaseConnectionString));
