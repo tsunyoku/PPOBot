@@ -72,20 +72,27 @@ public class ColourRoleModule(IColourRoleService colourRoleService, PPODbContext
             .Select(x => x.RoleId)
             .ToListAsync();
 
-        var users = await Context.Guild.SearchUsersAsyncV2(args: new MemberSearchPropertiesV2
+        List<MemberSearchData> members = [];
+
+        foreach (var colourRoleIdChunk in colourRoleIds.Chunk(10))
         {
-            AndQuery = new MemberSearchFilter
+            var users = await Context.Guild.SearchUsersAsyncV2(args: new MemberSearchPropertiesV2
             {
-                RoleIds = new MemberSearchSnowflakeQuery
+                AndQuery = new MemberSearchFilter
                 {
-                    OrQuery = colourRoleIds,
+                    RoleIds = new MemberSearchSnowflakeQuery
+                    {
+                        OrQuery = colourRoleIdChunk,
+                    }
                 }
-            }
-        });
+            });
+
+            members.AddRange(users.Members);
+        }
 
         List<ColourRoleMember> colourRoleMembers = [];
 
-        foreach (var member in users.Members)
+        foreach (var member in members)
         {
             var colourRoleId = member.User.RoleIds.Single(colourRoleIds.Contains);
 
@@ -94,7 +101,7 @@ public class ColourRoleModule(IColourRoleService colourRoleService, PPODbContext
                 UserId = member.User.Id,
                 RoleId = colourRoleId,
             };
-            
+
             colourRoleMembers.Add(colourRoleMember);
         }
 
