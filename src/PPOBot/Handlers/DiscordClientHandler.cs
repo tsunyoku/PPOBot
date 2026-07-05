@@ -31,7 +31,7 @@ public class DiscordClientHandler(
 
         client.Ready += HandleReady;
         client.InteractionCreated += HandleInteractionReceived;
-        client.UserUpdated += HandleUserUpdated;
+        client.GuildMemberUpdated += HandleUserUpdated;
         interactionService.SlashCommandExecuted += HandleSlashCommandExecuted;
 
         logger.LogInformation("Starting discord service...");
@@ -79,29 +79,20 @@ public class DiscordClientHandler(
             logger.LogError("Failed to process interaction: {@ErrorReason}", result.ErrorReason);
     }
     
-    private async Task HandleUserUpdated(SocketUser before, SocketUser after)
+    private async Task HandleUserUpdated(Cacheable<SocketGuildUser, ulong> _, SocketGuildUser postUpdateUser)
     {
-        var beforeGuildUser = (IGuildUser)before;
-        var afterGuildUser = (IGuildUser)after;
-
-        var removedRoleIds = beforeGuildUser.RoleIds.Except(afterGuildUser.RoleIds).ToArray();
-
-        if (!removedRoleIds.Any())
-            return;
-
         var colourRoles = await dbContext.ColourRoles
             .AsNoTracking()
-            .Where(x => removedRoleIds.Contains(x.RoleId))
             .ToArrayAsync();
         
         var colourRoleIds = colourRoles.Select(x => x.RoleId).ToArray();
 
-        foreach (var (roleId, count) in await afterGuildUser.Guild.GetRoleUserCountsAsync())
+        foreach (var (roleId, count) in await postUpdateUser.Guild.GetRoleUserCountsAsync())
         {
             if (!colourRoleIds.Contains(roleId))
                 continue;
 
-            var discordRole = await afterGuildUser.Guild.GetRoleAsync(roleId);
+            var discordRole = await postUpdateUser.Guild.GetRoleAsync(roleId);
             
             if (count == 0)
             {
@@ -116,12 +107,11 @@ public class DiscordClientHandler(
             {
                 List<string> usernames = [];
 
-                foreach (var user in await afterGuildUser.Guild.GetUsersAsync())
+                await foreach (var users in postUpdateUser.Guild.GetUsersAsync())
                 {
-                    if (!user.RoleIds.Contains(discordRole.Id))
-                        continue;
-                    
-                    usernames.Add(user.Username);
+                    usernames.AddRange(users
+                        .Where(x => x.RoleIds.Contains(discordRole.Id))
+                        .Select(x => x.Username));
                 }
 
                 await discordRole.ModifyAsync(props =>
