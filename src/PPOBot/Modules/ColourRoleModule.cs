@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using PPOBot.Entities;
 
@@ -15,7 +16,7 @@ public class ColourRoleModule(PPODbContext dbContext) : InteractionModuleBase<So
         await DeferAsync(ephemeral: true);
 
         var normalisedColour = hexCode.TrimStart('#').ToLowerInvariant();
-        
+
         var guildUser = (IGuildUser)Context.User;
 
         var otherColourRoleIds = await dbContext.ColourRoles
@@ -39,6 +40,29 @@ public class ColourRoleModule(PPODbContext dbContext) : InteractionModuleBase<So
             await AmendExistingColourRole(existingColourRole);
         }
 
+        await FollowupAsync("Role assigned!", ephemeral: true);
+    }
+
+    [SlashCommand("copy", "Inherit the colour role of another user")]
+    public async Task CopyColourRole(
+        [Summary(description: "The user to copy from")] SocketUser user)
+    {
+        await DeferAsync(ephemeral: true);
+
+        var guildUserToCopy = (IGuildUser)user;
+
+        var colourRole = await dbContext.ColourRoles
+            .AsNoTracking()
+            .Where(x => guildUserToCopy.RoleIds.Contains(x.RoleId))
+            .SingleOrDefaultAsync();
+
+        if (colourRole is null)
+        {
+            await FollowupAsync("This user does not have a colour role", ephemeral: true);
+            return;
+        }
+        
+        await AmendExistingColourRole(colourRole);
         await FollowupAsync("Role assigned!", ephemeral: true);
     }
 
